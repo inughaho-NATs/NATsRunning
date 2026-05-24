@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adi Marathon Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #f0f2f7;
+    --surface: #ffffff;
+    --surface2: #f5f7fb;
+    --border: #e0e4ef;
+    --accent: #e03516;
+    --accent2: #e07800;
+    --teal: #00a885;
+    --blue: #2d6fe8;
+    --purple: #7c3aed;
+    --text: #1a1f2e;
+    --text-dim: #4a5568;
+    --text-muted: #94a3b8;
+    --success: #16a35f;
+    --warning: #d4970a;
+    --danger: #e03516;
+    --run-color: #2d6fe8;
+    --gym-color: #7c3aed;
+    --recovery-color: #00a885;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f7fb 50%, #edf0f8 100%);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 64px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-nav { display: flex; gap: 0.25rem; flex: 1; }
+  .nav-btn {
+    background: none; border: none; color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
+    padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { color: var(--text); background: var(--surface2); }
+  .nav-btn.active { color: var(--accent); background: rgba(255,77,46,0.12); }
+  .race-badge {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+    background: rgba(255,77,46,0.15); border: 1px solid rgba(255,77,46,0.3);
+    color: var(--accent); padding: 0.3rem 0.8rem; border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  /* MAIN LAYOUT */
+  .app { display: flex; height: calc(100vh - 64px); }
+  .sidebar {
+    width: 240px; min-width: 240px; background: var(--surface);
+    border-right: 1px solid var(--border); overflow-y: auto;
+    padding: 1rem 0;
+  }
+  .sidebar-section { padding: 0.5rem 1rem 0.25rem; }
+  .sidebar-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 1.5px;
+    color: var(--text-muted); text-transform: uppercase; padding: 0 0.5rem 0.5rem;
+  }
+  .week-btn {
+    display: flex; align-items: center; gap: 0.6rem; width: 100%;
+    background: none; border: none; color: var(--text-dim);
+    padding: 0.45rem 0.75rem; border-radius: 6px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem; text-align: left;
+    transition: all 0.15s;
+  }
+  .week-btn:hover { background: var(--surface2); color: var(--text); }
+  .week-btn.active { background: rgba(255,77,46,0.12); color: var(--accent); }
+  .week-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .week-dot.done { background: var(--success); }
+  .week-dot.partial { background: var(--warning); }
+  .week-dot.current { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .week-phase {
+    font-size: 0.65rem; color: var(--text-muted); margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; }
+  .page { display: none; padding: 2rem; }
+  .page.active { display: block; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem; position: relative; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent-color, var(--accent));
+  }
+  .kpi-label { font-size: 0.72rem; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+  .kpi-value { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; line-height: 1; color: var(--accent-color, var(--text)); }
+  .kpi-sub { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.3rem; }
+  .kpi-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 0.8rem; }
+  .kpi-bar-fill { height: 100%; background: var(--accent-color, var(--accent)); border-radius: 2px; transition: width 0.8s ease; }
+
+  /* CHARTS */
+  .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .chart-title { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); letter-spacing: 0.5px; margin-bottom: 1.25rem; text-transform: uppercase; }
+  .chart-container { position: relative; }
+  canvas { width: 100% !important; }
+
+  /* WEEK VIEW */
+  .week-header {
+    display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;
+    padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+  }
+  .week-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; }
+  .phase-tag {
+    font-size: 0.72rem; padding: 0.3rem 0.8rem; border-radius: 20px;
+    background: rgba(255,77,46,0.12); color: var(--accent); border: 1px solid rgba(255,77,46,0.2);
+  }
+  .week-progress { margin-left: auto; text-align: right; }
+  .week-progress-val { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; color: var(--success); }
+  .week-progress-label { font-size: 0.7rem; color: var(--text-muted); }
+
+  .sessions-grid { display: grid; gap: 0.75rem; }
+  .session-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.25rem;
+    display: grid; grid-template-columns: 80px 1fr auto; gap: 1rem; align-items: start;
+    transition: border-color 0.2s;
+  }
+  .session-card:hover { border-color: var(--text-muted); }
+  .session-card.selesai { border-left: 3px solid var(--success); }
+  .session-card.skip { border-left: 3px solid var(--warning); opacity: 0.6; }
+  .session-card.cedera { border-left: 3px solid var(--danger); }
+  .session-card.belum { border-left: 3px solid var(--text-muted); }
+  .session-card.opsional { border-left: 3px solid var(--recovery-color); opacity: 0.7; }
+
+  .session-day { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim); padding-top: 2px; }
+  .session-date { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+  .session-type-badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem;
+  }
+  .badge-run { background: rgba(77,143,255,0.15); color: var(--run-color); }
+  .badge-gym { background: rgba(155,89,255,0.15); color: var(--gym-color); }
+  .badge-recovery { background: rgba(0,212,170,0.12); color: var(--recovery-color); }
+  .session-focus { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+  .session-detail { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; line-height: 1.5; }
+  .session-targets { display: flex; gap: 1rem; margin-top: 0.6rem; flex-wrap: wrap; }
+  .target-pill {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    background: var(--border); color: var(--text-dim);
+    padding: 0.15rem 0.5rem; border-radius: 4px;
+  }
+
+  /* DUAL-SESSION DAY CARDS */
+  .day-dual-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .day-header {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+  }
+  .dual-sessions {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  }
+  .sub-session {
+    padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .run-sub { border-right: 1px solid var(--border); background: rgba(45,111,232,0.02); }
+  .gym-sub { background: rgba(124,58,237,0.02); }
+  .sub-header {
+    display: flex; align-items: center; gap: 0.6rem; justify-content: space-between;
+    margin-bottom: 0.25rem;
+  }
+  .status-sm {
+    font-size: 0.72rem !important; padding: 0.2rem 0.4rem !important;
+    min-width: 90px;
+  }
+  .sub-inputs { display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.4rem; }
+  .unit-lbl { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
+
+  /* EDITABLE FIELDS */
+  .session-inputs { display: flex; flex-direction: column; gap: 0.6rem; min-width: 280px; }
+  .input-row { display: flex; gap: 0.5rem; align-items: center; }
+  .input-label { font-size: 0.65rem; color: var(--text-muted); white-space: nowrap; width: 55px; text-align: right; }
+  .edit-input {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+    padding: 0.3rem 0.6rem; border-radius: 6px; width: 80px; transition: border-color 0.2s;
+  }
+  .edit-input:focus { outline: none; border-color: var(--accent); }
+  .status-select {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; transition: border-color 0.2s;
+  }
+  .status-select:focus { outline: none; border-color: var(--accent); }
+  .status-select option { background: var(--surface); }
+  .notes-input {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.75rem;
+    padding: 0.3rem 0.6rem; border-radius: 6px; width: 100%; resize: none; transition: border-color 0.2s;
+  }
+  .notes-input:focus { outline: none; border-color: var(--accent); }
+
+  /* ANALYSIS PAGE */
+  .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .full-width { grid-column: 1 / -1; }
+  .reco-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.25rem;
+  }
+  .reco-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .reco-icon { font-size: 1.5rem; }
+  .reco-title { font-size: 0.9rem; font-weight: 600; }
+  .reco-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .reco-item {
+    font-size: 0.8rem; color: var(--text-dim); padding-left: 1rem; position: relative; line-height: 1.5;
+  }
+  .reco-item::before { content: '→'; position: absolute; left: 0; color: var(--accent); }
+
+  /* PROGRAM PAGE */
+  .program-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .program-table th {
+    text-align: left; padding: 0.6rem 1rem; font-size: 0.65rem; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .program-table td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .program-table tr:hover td { background: rgba(0,0,0,0.02); }
+  .phase-cell { font-size: 0.7rem; color: var(--text-muted); }
+  .recovery-row td { opacity: 0.6; }
+  .current-row td { background: rgba(224,53,22,0.05); }
+  .progress-mini { width: 80px; height: 6px; background: var(--border); border-radius: 3px; }
+  .progress-mini-fill { height: 100%; background: var(--success); border-radius: 3px; }
+
+  /* GYM DETAIL */
+  .gym-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .gym-tab {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+    padding: 0.5rem 1.25rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem;
+    transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+  }
+  .gym-tab.active { background: rgba(155,89,255,0.15); border-color: var(--gym-color); color: var(--gym-color); }
+  .exercise-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.9rem 1rem; display: grid;
+    grid-template-columns: 1fr auto auto auto; gap: 1rem; align-items: center;
+  }
+  .exercise-name { font-size: 0.85rem; font-weight: 500; }
+  .exercise-meta { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem; }
+  .exercise-set { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--blue); white-space: nowrap; }
+  .exercise-muscle { font-size: 0.7rem; color: var(--text-muted); }
+  .beban-input {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+    padding: 0.3rem 0.5rem; border-radius: 5px; width: 70px; text-align: center;
+  }
+  .beban-input:focus { outline: none; border-color: var(--gym-color); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    background: var(--success); color: #fff; padding: 0.75rem 1.25rem;
+    border-radius: 8px; font-size: 0.82rem; font-weight: 500;
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.3s; pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* HERO PROGRESS BAR */
+  .hero-bar-wrap { margin-bottom: 2rem; }
+  .hero-bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .hero-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .hero-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--run-color), var(--accent), var(--accent2));
+    border-radius: 4px; transition: width 1s ease;
+    position: relative;
+  }
+  .hero-bar-fill::after {
+    content: ''; position: absolute; right: 0; top: -2px; bottom: -2px;
+    width: 3px; background: #fff; border-radius: 2px;
+    box-shadow: 0 0 8px rgba(45,111,232,0.5);
+  }
+
+  .stat-mini { display: flex; gap: 0.5rem; align-items: center; }
+  .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .run-legend { display: flex; gap: 1.5rem; margin-bottom: 1rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--text-dim); }
+  .legend-box { width: 10px; height: 10px; border-radius: 2px; }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 1px;
+    margin-bottom: 1rem; color: var(--text);
+  }
+
+
+  /* TYPE SELECTORS */
+  .type-select-run { border-color: rgba(45,111,232,0.3) !important; color: var(--run-color) !important; }
+  .type-select-gym { border-color: rgba(124,58,237,0.3) !important; color: var(--gym-color) !important; }
+
+  /* RACE EDITABLE FIELDS */
+  .race-edit-section { background: var(--surface2); border-radius: 8px; padding: 0.75rem; margin: 0.5rem 0; border: 1px solid var(--border); }
+  .race-edit-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .race-edit-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 110px; flex: 1; }
+  .race-field-label { font-size: 0.62rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .race-field-input {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 0.78rem; padding: 0.3rem 0.5rem;
+    border-radius: 6px; transition: border-color 0.2s; width: 100%;
+  }
+  .race-field-input:focus { outline: none; border-color: var(--accent); }
+  .race-field-input[type="date"] { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; }
+
+  /* RACE CALENDAR CARDS */
+  .race-card {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 14px; padding: 1.25rem; display:flex; flex-direction:column; gap:0.75rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .race-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .race-card-a { box-shadow: 0 4px 20px rgba(224,53,22,0.15); }
+  .race-card-past { opacity: 0.75; }
+  .race-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; }
+  .race-emoji { font-size:1.5rem; margin-right:0.4rem; }
+  .race-name { font-size:0.95rem; font-weight:700; color:var(--text); }
+  .race-type-badge { font-size:0.65rem; font-weight:700; border:1px solid; border-radius:4px; padding:0.15rem 0.5rem; margin-left:0.4rem; text-transform:uppercase; }
+  .race-priority { font-size:0.65rem; font-weight:700; border-radius:4px; padding:0.15rem 0.5rem; margin-left:0.3rem; }
+  .race-countdown { text-align:center; flex-shrink:0; }
+  .race-meta { display:flex; gap:1rem; flex-wrap:wrap; font-size:0.75rem; color:var(--text-dim); }
+  .race-notes { font-size:0.78rem; color:var(--text-dim); background:var(--surface2); border-radius:8px; padding:0.6rem 0.8rem; line-height:1.5; }
+  .race-a-banner { background:linear-gradient(90deg,#e03516,#ff8c00); color:#fff; font-size:0.75rem; font-weight:700; text-align:center; padding:0.5rem; border-radius:6px; letter-spacing:0.5px; }
+  .race-tracking { border-top:1px solid var(--border); padding-top:0.75rem; }
+  .race-track-title { font-size:0.7rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.25rem; }
+
+  .save-btn {
+    background: var(--accent); color: #fff; border: none;
+    padding: 0.5rem 1.25rem; border-radius: 6px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .save-btn:hover { background: #e83d1e; transform: translateY(-1px); }
+
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-grid { grid-template-columns: 1fr; }
+    .analysis-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">ADI MARATHON TRACKER</div>
+  <nav class="header-nav">
+    <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="showPage('schedule')">Jadwal</button>
+    <button class="nav-btn" onclick="showPage('gym')">Gym Detail</button>
+    <button class="nav-btn" onclick="showPage('program')">Program</button>
+    <button class="nav-btn" onclick="showPage('races')">🏁 Race Calendar</button>
+    <button class="nav-btn" onclick="showPage('analysis')">Analisa & Rekomendasi</button>
+  </nav>
+  <div class="race-badge">🏃 Mulai 1 Mei 2026 · Sarawak 9 Agt · Borobudur 16 Nov</div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="weekSidebar" style="display:none;">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Pilih Minggu</div>
+    </div>
+    <div id="weekList"></div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi-card" style="--accent-color: var(--success)">
+          <div class="kpi-label">Completion Rate</div>
+          <div class="kpi-value" id="kpi-rate">0%</div>
+          <div class="kpi-sub" id="kpi-rate-sub">0 dari 0 sesi selesai</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-bar-rate" style="width:0%"></div></div>
+        </div>
+        <div class="kpi-card" style="--accent-color: var(--run-color)">
+          <div class="kpi-label">Total Running KM</div>
+          <div class="kpi-value" id="kpi-km">0</div>
+          <div class="kpi-sub" id="kpi-km-sub">Target: ~520 km total</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="--accent-color:var(--run-color)" id="kpi-bar-km"></div></div>
+        </div>
+        <div class="kpi-card" style="--accent-color: var(--gym-color)">
+          <div class="kpi-label">Sesi Gym Selesai</div>
+          <div class="kpi-value" id="kpi-gym">0</div>
+          <div class="kpi-sub" id="kpi-gym-sub">Target: 72 sesi</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="--accent-color:var(--gym-color)" id="kpi-bar-gym"></div></div>
+        </div>
+        <div class="kpi-card" style="--accent-color: var(--accent2)">
+          <div class="kpi-label">Long Run Peak</div>
+          <div class="kpi-value" id="kpi-peak">0</div>
+          <div class="kpi-sub">km — rekor long run</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" style="--accent-color:var(--accent2)" id="kpi-bar-peak"></div></div>
+        </div>
+        <div class="kpi-card" style="--accent-color: var(--accent); grid-column: span 2;">
+          <div class="kpi-label">Next Race</div>
+          <div class="kpi-value" id="kpi-next-race" style="font-size:1.4rem;line-height:1.2">—</div>
+          <div class="kpi-sub" id="kpi-next-race-days" style="color:var(--accent);font-weight:600">— hari lagi</div>
+          <div class="kpi-sub" id="kpi-next-race-note" style="margin-top:0.3rem;font-size:0.7rem">—</div>
+        </div>
+      </div>
+
+      <div class="hero-bar-wrap">
+        <div class="hero-bar-label">
+          <span>Progress Program</span>
+          <span id="hero-bar-label-r">Minggu 1 dari 35</span>
+        </div>
+        <div class="hero-bar"><div class="hero-bar-fill" id="hero-bar-fill" style="width:0%"></div></div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Long Run Progress — Aktual vs Target (km)</div>
+          <div class="run-legend">
+            <div class="legend-item"><div class="legend-box" style="background:var(--run-color)"></div>Aktual</div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--border)"></div>Target</div>
+          </div>
+          <canvas id="chartLongRun" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Distribusi Sesi</div>
+          <canvas id="chartDonut" height="160"></canvas>
+          <div style="display:flex; gap:1rem; justify-content:center; margin-top:1rem;">
+            <div class="legend-item"><div class="legend-box" style="background:var(--run-color)"></div>Running</div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--gym-color)"></div>Gym</div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--recovery-color)"></div>Recovery</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-grid" style="grid-template-columns:1fr 1fr">
+        <div class="chart-card">
+          <div class="chart-title">Completion % per Minggu</div>
+          <canvas id="chartCompletion" height="160"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Avg HR per Minggu (Running)</div>
+          <canvas id="chartHR" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE PAGE -->
+    <div class="page" id="page-schedule">
+      <div class="week-header">
+        <div>
+          <div class="week-title" id="sched-week-title">Minggu 1</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;">
+            <div class="phase-tag" id="sched-phase-tag">Fase 1</div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--text-muted)" id="sched-date-range">1 Mei – 7 Mei 2026</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-left:1rem;">
+          <button class="save-btn" style="background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);" onclick="changeWeek(-1)">← Prev</button>
+          <button class="save-btn" style="background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);" onclick="changeWeek(1)">Next →</button>
+        </div>
+        <div class="week-progress" style="margin-left:auto;">
+          <div class="week-progress-val" id="sched-week-comp">0%</div>
+          <div class="week-progress-label">Completion minggu ini</div>
+        </div>
+        <button class="save-btn" onclick="saveAll()">Simpan Semua</button>
+      </div>
+      <div id="sched-race-banner" style="display:none;border:1px solid;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;gap:1rem;align-items:center;"></div>
+      <div class="sessions-grid" id="sessionsGrid"></div>
+    </div>
+
+    <!-- GYM DETAIL PAGE -->
+    <div class="page" id="page-gym">
+      <div class="section-title">Detail Sesi Gym</div>
+      <div class="gym-tabs">
+        <button class="gym-tab active" data-tab="upper" onclick="showGymTab('upper')">💪 Upper Body + Core</button>
+        <button class="gym-tab" data-tab="legs" onclick="showGymTab('legs')">🦵 Heavy Legs</button>
+        <button class="gym-tab" data-tab="chest" onclick="showGymTab('chest')">🏋️ Chest + Full Body</button>
+      </div>
+      <div id="gymContent" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+    </div>
+
+    <!-- PROGRAM PAGE -->
+    <div class="page" id="page-program">
+      <div class="section-title">Program Long Run 52 Minggu — 2026</div>
+      <div class="chart-card" style="margin-bottom:1rem;">
+        <div class="chart-title">Rencana Long Run Seluruh Program (km)</div>
+        <canvas id="chartProgramFull" height="140"></canvas>
+      </div>
+      <div class="chart-card">
+        <div style="overflow-x:auto;">
+          <table class="program-table">
+            <thead>
+              <tr>
+                <th>Minggu</th>
+                <th>Fase</th>
+                <th>Target Long Run</th>
+                <th>Tipe Minggu</th>
+                <th>Aktual</th>
+                <th>Progress</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="programTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RACE CALENDAR PAGE -->
+    <div class="page" id="page-races">
+      <div class="section-title">🏁 Race Calendar 2026</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem;" id="racesGrid"></div>
+    </div>
+
+    <!-- ANALYSIS PAGE -->
+    <div class="page" id="page-analysis">
+      <div class="section-title">Analisa & Rekomendasi</div>
+      <div class="chart-card" style="margin-bottom:1rem;">
+        <div class="chart-title">Radar — Keseimbangan Latihan per Fase</div>
+        <div style="max-width:360px;margin:0 auto;"><canvas id="chartRadar" height="280"></canvas></div>
+      </div>
+      <div class="analysis-grid" id="recoGrid"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Data tersimpan</div>
+
+<script>
+// ===================== RACE CALENDAR 2026 =====================
+// Program: 1 Jan 2026 – 31 Dec 2026 (52 weeks)
+// A-Race: Sarawak Energy Marathon (FM) — 9 Aug 2026 (Week 32)
+// B/C Races tersebar sebagai stepping stones
+
+const RACES = [
+  { name:'YelloRun 10K',           date:'2026-06-07', type:'10K', priority:'C', week:6,  emoji:'🟡', color:'#f59e0b', notes:'C-Race — race pertama! Test pace & gel strategy. Target sub-60 mnt.' },
+  { name:'JAKIM Half Marathon',    date:'2026-06-14', type:'HM',  priority:'B', week:7,  emoji:'🔵', color:'#3b82f6', notes:'B-Race — 1 minggu setelah YelloRun. Pace konservatif. Target sub-2:30.' },
+  { name:'Sarawak Energy Marathon',date:'2026-08-09', type:'FM',  priority:'A', week:15, emoji:'⭐', color:'#e03516', notes:'A-RACE #1 — Full Marathon pertama! Target finish < 5 jam. Kuching Isthmus.' },
+  { name:'UI Half Marathon',       date:'2026-10-11', type:'HM',  priority:'B', week:24, emoji:'🔵', color:'#6366f1', notes:'B-Race — comeback post-marathon. Target sub-2:20. Stepping stone Borobudur.' },
+  { name:'Alfamurt Run 10K',       date:'2026-10-18', type:'10K', priority:'C', week:25, emoji:'🟠', color:'#f97316', notes:'C-Race — 1 minggu setelah UI HM. Fun run, target sub-55 mnt.' },
+  { name:'Borobudur Marathon',     date:'2026-11-16', type:'FM',  priority:'A', week:29, emoji:'🏯', color:'#8b5cf6', notes:'A-RACE #2 — PR target dari Sarawak. Candi Borobudur, Magelang. Target sub-4:45.' },
+];
+
+// ===================== PROGRAM 52 WEEKS =====================
+// W1-8   (Jan-Feb):  Aerobic Foundation
+// W9-16  (Mar-Apr):  Volume Build
+// W17-22 (Mei-Jun):  Pre-Race Build + Taper
+// W23    (7 Jun):    🟡 YelloRun 10K
+// W24    (14 Jun):   🔵 JAKIM Half Marathon
+// W25-31 (Jun-Agt):  Marathon Peak + Taper
+// W32    (9 Agt):    ⭐ Sarawak Energy Marathon (A-RACE)
+// W1-5   (Mei):      Aerobic Base
+// W6     (7 Jun):    🟡 YelloRun 10K
+// W7     (14 Jun):   🔵 JAKIM Half Marathon
+// W8-14  (Jun-Agt):  Marathon Peak Build + Taper
+// W15    (9 Agt):    ⭐ Sarawak Energy Marathon (A-Race #1)
+// W16-23 (Agt-Okt):  Recovery → Borobudur Build
+// W24    (11 Okt):   🔵 UI Half Marathon
+// W25    (18 Okt):   🟠 Alfamurt Run 10K
+// W26-28 (Okt-Nov):  Borobudur Peak Build (puncak 28 km)
+// W29    (16 Nov):   🏯 Borobudur Marathon (A-Race #2)
+// W30-35 (Nov-Des):  Post-Borobudur + year-end wind-down
+const PROGRAM_WEEKS = 35; // 1 Mei – 31 Des 2026
+
+// Jan 1, 2026 is a Thursday. We start week on Friday Jan 2.
+// But user starts training Jan 1 (Thu). We place week 1 = Jan 1–7 (Thu–Wed)
+// Program start: Thursday 1 Jan 2026 (adjusted from earlier Friday 1 May)
+const PROGRAM_START = new Date(2026, 4, 1); // May 1, Fri — program start
+
+// Long run targets — 35 weeks (1 Mei – 31 Des 2026)
+// YelloRun W6 (7 Jun) | JAKIM HM W7 (14 Jun) | Sarawak FM W15 (9 Agt)
+// UI HM W24 (11 Okt) | Alfamurt W25 (18 Okt) | Borobudur FM W29 (16 Nov)
+const LONG_RUN_TARGETS = [
+   8, 10, 12, 14,  // W1-4   Base aerobic (Mei)
+  16,              // W5     Volume build
+  12,              // W6     🟡 YelloRun 10K 7 Jun — taper
+  14,              // W7     🔵 JAKIM HM 14 Jun — race as long run
+  16, 20, 24, 22,  // W8-11  Recovery + volume rebuild (Jun-Jul)
+  28, 30,          // W12-13 Peak marathon build (Jul-Agt)
+  18,              // W14    Pre-race taper
+  42.195,          // W15    ⭐ SARAWAK ENERGY MARATHON 9 Agt
+   8,  6,  8, 12,  // W16-19 Post-marathon recovery (Agt-Sep)
+  16, 18, 20,      // W20-22 Return to fitness (Sep-Okt)
+  22,              // W23    Borobudur build
+  16,              // W24    🔵 UI HM 11 Okt — race as long run
+  12,              // W25    🟠 Alfamurt 10K 18 Okt
+  22, 26, 28,      // W26-28 Borobudur peak build (Okt-Nov)
+  42.195,          // W29    🏯 BOROBUDUR MARATHON 16 Nov
+  12, 10,  8,      // W30-32 Post-Borobudur recovery (Nov)
+   8,  6,  6,      // W33-35 Year-end wind-down (Des)
+];
+
+// Week types for sidebar/table
+function getWeekType(w) {
+  const race = RACES.find(r => r.week === w);
+  if(race) return { label: race.emoji + ' ' + race.type + ' Race', color: race.color, isRace: true, race };
+  const lr = LONG_RUN_TARGETS[w-1];
+  const prev = w > 1 ? LONG_RUN_TARGETS[w-2] : 0;
+  if(w >= 16 && w <= 19) return { label:'🔄 Post-Marathon Recovery', color:'#00a885', isRace:false };
+  if(w >= 20 && w <= 23) return { label:'📈 Borobudur Build', color:'#8b5cf6', isRace:false };
+  if(w >= 26 && w <= 28) return { label:'💥 Borobudur Peak', color:'#8b5cf6', isRace:false };
+  if(w >= 30 && w <= 35) return { label:'🔧 Wind-Down', color:'#6b7280', isRace:false };
+  if(lr >= 28) return { label:'💥 Peak', color:'#e03516', isRace:false };
+  if(lr < prev && lr <= 14) return { label:'⬇️ Cutback', color:'#f59e0b', isRace:false };
+  if(lr >= 28) return { label:'💥 Peak', color:'#e03516', isRace:false };
+  return { label:'📈 Build', color:'#2d6fe8', isRace:false };
+}
+
+// Training phases — 35 weeks from 1 Mei 2026
+const PHASES = {
+  1:[1,5],   // W1-5  (Mei): Aerobic Base
+  2:[6,7],   // W6-7  (Jun): 🟡 YelloRun 10K + 🔵 JAKIM HM
+  3:[8,14],  // W8-14 (Jun-Agt): Marathon Peak Build + Taper
+  4:[15,15], // W15   (9 Agt): ⭐ Sarawak Energy Marathon
+  5:[16,23], // W16-23 (Agt-Okt): Recovery + Borobudur Build
+  6:[24,25], // W24-25 (Okt): 🔵 UI HM + 🟠 Alfamurt 10K
+  7:[26,28], // W26-28 (Okt-Nov): Borobudur Peak Build
+  8:[29,29], // W29   (16 Nov): 🏯 Borobudur Marathon
+  9:[30,35], // W30-35 (Nov-Des): Post-race + Year-end
+};
+const PHASE_NAMES = {
+  1:'Aerobic Base', 2:'🟡 Race: YelloRun & JAKIM', 3:'Marathon Peak + Taper',
+  4:'⭐ Sarawak Marathon', 5:'Recovery + Borobudur Build',
+  6:'🔵🟠 UI HM & Alfamurt', 7:'Borobudur Peak Build',
+  8:'🏯 Borobudur Marathon', 9:'Post-Race + Year-End'
+};
+function getPhase(w) {
+  for(let p in PHASES) { const [s,e] = PHASES[p]; if(w>=s && w<=e) return +p; }
+  return 7;
+}
+
+// Date utilities
+const ID_MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+function fmtDate(d) { return d.getDate() + ' ' + ID_MONTHS[d.getMonth()]; }
+function sessionDate(w, dayOffset) {
+  const d = new Date(PROGRAM_START);
+  d.setDate(d.getDate() + (w-1)*7 + dayOffset);
+  return d;
+}
+function weekDateRange(w) {
+  const s = sessionDate(w,0), e = sessionDate(w,6);
+  return fmtDate(s) + ' – ' + fmtDate(e);
+}
+
+// Day template — each day has Running + Gym
+const DAYS_TEMPLATE = [
+  { day:'Jumat',  dayOffset:0,
+    running:{ focus:'Easy Run Zone 2',        detail:'Warm up 10 mnt + easy Zone 2 + 4x20 dtk strides + cool down', targetHR:'Zone 2 / RPE 4-5', distKm:5, isLongRun:false },
+    gym:    { focus:'Upper Body + Core',       detail:'Bench press, incline DB, cable fly, barbell curl, hammer curl, tricep pushdown, plank, knee raise', dur:70, targetHR:'RPE 6-7' }},
+  { day:'Sabtu',  dayOffset:1,
+    running:{ focus:'Long Run',               detail:'Long run Zone 2 sesuai target minggu + hidrasi tiap 20 mnt + gel ≥14km', targetHR:'Zone 2 / RPE 4-6', distKm:null, isLongRun:true },
+    gym:    { focus:'Core & Mobility',         detail:'Plank 3x60 dtk, dead bug, bird dog, hip flexor stretch, foam rolling 15 mnt', dur:30, targetHR:'Ringan' }},
+  { day:'Minggu', dayOffset:2,
+    running:{ focus:'Rest / Jalan Santai',    detail:'Hari istirahat aktif — jalan santai 20-30 mnt atau total rest', targetHR:'Zone 1', distKm:2, isLongRun:false },
+    gym:    { focus:'Stretching & Foam Roll',  detail:'Full body stretching 20 mnt + foam rolling IT band, calf, glutes + mobility drills', dur:25, targetHR:'Ringan' }},
+  { day:'Senin',  dayOffset:3,
+    running:{ focus:'Interval Speed',         detail:'Warm up + 6-8x400m @ 5K pace, recovery jog 90 dtk + cool down', targetHR:'RPE 8-9', distKm:8, isLongRun:false },
+    gym:    { focus:'Chest + Arms',            detail:'DB bench, push up, seated cable row, lat pulldown, EZ curl, tricep rope, face pull, cable crunch', dur:70, targetHR:'RPE 6-7' }},
+  { day:'Selasa', dayOffset:4,
+    running:{ focus:'Tempo Run',              detail:'Warm up + 20-40 mnt @ tempo pace (RPE 7) + cool down', targetHR:'RPE 7-8', distKm:10, isLongRun:false },
+    gym:    { focus:'Heavy Legs + Glutes',     detail:'Goblet squat, RDL, Bulgarian split squat, hip thrust, leg press, calf raise, cable woodchopper', dur:75, targetHR:'RPE 7-8' }},
+  { day:'Rabu',   dayOffset:5,
+    running:{ focus:'Easy Recovery Run',      detail:'Easy Zone 2 + high knees, butt kicks, A-skip + cool down', targetHR:'Zone 2 / RPE 4-5', distKm:5, isLongRun:false },
+    gym:    { focus:'Upper Body Volume',       detail:'Incline DB press, cable fly, pull-up/lat pulldown, cable row, shoulder press, lateral raise, arms, core', dur:65, targetHR:'RPE 6-7' }},
+  { day:'Kamis',  dayOffset:6,
+    running:{ focus:'Active Recovery Run',    detail:'Lari santai 20-30 mnt ringan, jaga HR Zone 1, akhiri minggu dengan santai', targetHR:'Zone 1 / RPE 3-4', distKm:3, isLongRun:false },
+    gym:    { focus:'Heavy Legs',              detail:'Back squat, RDL, walking lunge, leg press, calf raise, hamstring curl, dead bug', dur:75, targetHR:'RPE 7-8' }},
+];
+
+// ── RUN SESSION TYPES ─────────────────────────────────────────────────────
+const RUN_TYPES = {
+  'easy':       { label:'Easy Run Zone 2',    icon:'🟢', color:'#16a35f', detail:'Warm up 10 mnt + easy Zone 2 (bisa ngobrol) + 4×20 dtk strides + cool down', targetHR:'Zone 2 / RPE 4-5' },
+  'long':       { label:'Long Run',           icon:'🎯', color:'#e03516', detail:'Long run Zone 2 sesuai target minggu + hidrasi tiap 20 mnt + gel ≥14 km', targetHR:'Zone 2 / RPE 4-6' },
+  'tempo':      { label:'Tempo Run',          icon:'🔵', color:'#2d6fe8', detail:'Warm up 10 mnt + 20-40 mnt @ tempo pace (RPE 7, bisa bicara patah-patah) + cool down', targetHR:'RPE 7 / LT Pace' },
+  'interval':   { label:'Interval Run',       icon:'🔴', color:'#e03516', detail:'Warm up + 6-8×400m @ 5K pace, recovery jog 90 dtk antar interval + cool down', targetHR:'RPE 8-9 / 5K Pace' },
+  'fartlek':    { label:'Fartlek',            icon:'🟡', color:'#d4970a', detail:'Easy 10 mnt + 6-8×20-60 dtk surge bebas + easy jog antar surge + cool down', targetHR:'Zone 2-3 / RPE 5-7' },
+  'recovery':   { label:'Recovery Run',       icon:'🩵', color:'#00a885', detail:'Lari sangat santai, Zone 1 saja. Jaga HR rendah, durasi pendek 20-30 mnt', targetHR:'Zone 1 / RPE 3-4' },
+  'progression':{ label:'Progression Run',    icon:'📈', color:'#7c3aed', detail:'Mulai easy lalu naikkan pace setiap km, 10 mnt terakhir di tempo pace', targetHR:'Zone 2→4 / RPE 5-8' },
+  'hills':      { label:'Hill Repeats',       icon:'⛰️', color:'#8b5cf6', detail:'Warm up + 6-10× lari bukit 60-90 dtk, jalan/jog turun sbg recovery + cool down', targetHR:'RPE 8-9' },
+  'race':       { label:'Race Day',           icon:'🏁', color:'#e03516', detail:'RACE DAY — ikuti race strategy. Start konservatif, negative split, fueling sesuai plan', targetHR:'RPE sesuai target' },
+  'rest':       { label:'Rest / Cross Train', icon:'😴', color:'#94a3b8', detail:'Hari istirahat total atau cross training ringan (renang, sepeda santai, yoga)', targetHR:'Istirahat' },
+};
+
+// ── GYM SESSION TYPES ────────────────────────────────────────────────────────
+const GYM_TYPES = {
+  'upper':    { label:'Upper Body + Core',    icon:'💪', color:'#2d6fe8', detail:'Bench press, incline DB, cable fly, lat pulldown, cable row, barbell curl, tricep pushdown, plank, hanging knee raise' },
+  'legs':     { label:'Heavy Legs',           icon:'🦵', color:'#e03516', detail:'Back squat, Romanian deadlift, walking lunge, leg press, calf raise, hamstring curl, dead bug' },
+  'glutes':   { label:'Glutes + Legs',        icon:'🍑', color:'#f97316', detail:'Hip thrust, Bulgarian split squat, goblet squat, RDL, cable kickback, calf raise, hip abductor' },
+  'chest':    { label:'Chest + Arms',         icon:'🏋️', color:'#7c3aed', detail:'DB bench press, incline DB, cable fly, push-up, EZ bar curl, hammer curl, rope tricep, cable crunch' },
+  'back':     { label:'Back + Shoulders',     icon:'🔙', color:'#6366f1', detail:'Deadlift, pull-up/lat pulldown, seated row, face pull, shoulder press, lateral raise, rear delt fly' },
+  'fullbody': { label:'Full Body Strength',   icon:'⚡', color:'#d4970a', detail:'Squat, bench press, RDL, pull-up, shoulder press, core circuit — set medium, fokus form' },
+  'core':     { label:'Core & Mobility',      icon:'🧘', color:'#00a885', detail:'Plank 3×60 dtk, dead bug, bird dog, Russian twist, cable crunch, hip flexor stretch, foam rolling 15 mnt' },
+  'cardio':   { label:'Cardio + Core',        icon:'🚴', color:'#f59e0b', detail:'Treadmill/bike 20 mnt Zone 2 + core circuit: plank, mountain climber, leg raise, sit-up' },
+  'recovery': { label:'Recovery & Stretch',   icon:'🌿', color:'#16a35f', detail:'Full body stretching 20 mnt + foam rolling IT band, calf, glutes, hip flexor + mobility drills' },
+  'rest':     { label:'Rest / Skip',          icon:'😴', color:'#94a3b8', detail:'Gym skip hari ini — prioritaskan recovery atau alasan lain' },
+};
+
+// Race-week override: cutback long run + race as main event
+function getDayTemplateForWeek(w) {
+  const race = RACES.find(r => r.week === w);
+  const days = JSON.parse(JSON.stringify(DAYS_TEMPLATE)); // deep copy
+  if(race) {
+    // Adjust Sabtu long run on race week to be much shorter (taper)
+    days[1].running.detail = `RACE WEEK — ${race.name} (${race.type}) · ${race.date} · ${race.notes}`;
+    days[1].running.focus  = `🏁 ${race.name}`;
+    days[1].running.distKm = LONG_RUN_TARGETS[w-1];
+  }
+  // Post marathon (W33+): reduce intensity
+  if(w >= 33 && w <= 36) {
+    days.forEach(d => { d.running.targetHR = 'Zone 1-2 / RPE 3-5'; d.gym.targetHR = 'RPE 5-6'; });
+  }
+  return days;
+}
+
+// ===================== STATE =====================
+function loadState() {
+  const s = localStorage.getItem('marathon_state_v5');
+  if(s) return JSON.parse(s);
+  const state = { currentWeek: 1, weeks: {} };
+  for(let w=1; w<=PROGRAM_WEEKS; w++) {
+    const tpl = getDayTemplateForWeek(w);
+    state.weeks[w] = {
+      days: tpl.map(d => ({
+        day: d.day, dayOffset: d.dayOffset,
+        run: { focus:d.running.focus, detail:d.running.detail, targetHR:d.running.targetHR,
+               distKm: d.running.isLongRun ? LONG_RUN_TARGETS[w-1] : (d.running.distKm||null),
+               isLongRun:d.running.isLongRun, typeKey:d.running.isLongRun?'long':'easy',
+               status:'Belum', aktualKm:'', aktualDur:'', avgHR:'', rpe:'', catatan:'' },
+        gym: { focus:d.gym.focus, detail:d.gym.detail, targetHR:d.gym.targetHR, dur:d.gym.dur||60,
+               typeKey:'upper', status:'Belum', aktualDur:'', beban:'', catatan:'' }
+      }))
+    };
+  }
+  return state;
+}
+function saveState() { localStorage.setItem('marathon_state_v5', JSON.stringify(state)); }
+let state = loadState();
+let currentWeek = state.currentWeek || 1;
+let currentGymTab = 'upper';
+
+// ===================== UTILITIES =====================
+function calcWeekStats(w) {
+  const days = state.weeks[w]?.days || [];
+  let total=0, done=0, runDone=0, gymDone=0, kmTotal=0, hrVals=[];
+  days.forEach(d => {
+    total+=2;
+    if(d.run.status==='Selesai'){done++;runDone++;}
+    if(d.gym.status==='Selesai'){done++;gymDone++;}
+    if(d.run.aktualKm) kmTotal += parseFloat(d.run.aktualKm)||0;
+    if(d.run.avgHR) hrVals.push(parseFloat(d.run.avgHR)||0);
+  });
+  const comp = total>0 ? Math.round(done/total*100) : 0;
+  const avgHR = hrVals.length ? Math.round(hrVals.reduce((a,b)=>a+b)/hrVals.length) : 0;
+  return {total,done,runDone,gymDone,kmTotal,comp,avgHR};
+}
+function calcTotals() {
+  let runDone=0,gymDone=0,totalKm=0,peakLR=0,totalSessions=0,doneSessions=0;
+  for(let w=1;w<=PROGRAM_WEEKS;w++) {
+    const s=calcWeekStats(w);
+    runDone+=s.runDone; gymDone+=s.gymDone; totalKm+=s.kmTotal;
+    totalSessions+=s.total; doneSessions+=s.done;
+    // Scan ALL days — peak = highest actual km logged across any running session
+    (state.weeks[w]?.days||[]).forEach(d => {
+      if(d.run.status==='Selesai' && d.run.aktualKm) {
+        peakLR = Math.max(peakLR, parseFloat(d.run.aktualKm)||0);
+      }
+    });
+  }
+  return {runDone,gymDone,totalKm,peakLR,totalSessions,doneSessions};
+}
+function getCurrentWeekNum() {
+  const now = new Date();
+  const diff = Math.floor((now - PROGRAM_START)/(1000*60*60*24*7));
+  return Math.max(1, Math.min(PROGRAM_WEEKS, Math.max(1, diff+1)));
+}
+function getNextRace() {
+  const now = new Date();
+  return RACES.find(r => new Date(r.date) >= now) || RACES[RACES.length-1];
+}
+function daysUntilRace(race) {
+  return Math.max(0, Math.ceil((new Date(race.date) - new Date())/(1000*60*60*24)));
+}
+
+// ===================== RENDER =====================
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelector(`[onclick="showPage('${page}')"]`).classList.add('active');
+  document.getElementById('weekSidebar').style.display = (page==='schedule') ? 'block' : 'none';
+  if(page==='schedule') renderSchedule();
+  if(page==='dashboard') renderDashboard();
+  if(page==='gym') renderGym();
+  if(page==='program') renderProgram();
+  if(page==='analysis') renderAnalysis();
+  if(page==='races') renderRaces();
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const tot = calcTotals();
+  const totalKmTarget = 700; // 35 weeks estimate
+  const gymTarget = PROGRAM_WEEKS * 7; // 7 gym sessions/week
+  const rate = tot.totalSessions > 0 ? Math.round(tot.doneSessions/tot.totalSessions*100) : 0;
+
+  document.getElementById('kpi-rate').textContent = rate+'%';
+  document.getElementById('kpi-rate-sub').textContent = `${tot.doneSessions} dari ${tot.totalSessions} sesi`;
+  document.getElementById('kpi-bar-rate').style.width = rate+'%';
+  document.getElementById('kpi-km').textContent = tot.totalKm.toFixed(0);
+  document.getElementById('kpi-km-sub').textContent = `Target: ~${totalKmTarget} km (Mei–Des)`;
+  document.getElementById('kpi-bar-km').style.width = Math.min(tot.totalKm/totalKmTarget*100,100)+'%';
+  document.getElementById('kpi-gym').textContent = tot.gymDone;
+  document.getElementById('kpi-gym-sub').textContent = `Target: ${gymTarget} sesi gym`;
+  document.getElementById('kpi-bar-gym').style.width = Math.min(tot.gymDone/gymTarget*100,100)+'%';
+  document.getElementById('kpi-peak').textContent = tot.peakLR.toFixed(1);
+  document.getElementById('kpi-bar-peak').style.width = Math.min(tot.peakLR/42.195*100,100)+'%';
+
+  // Next race countdown
+  const next = getNextRace();
+  const days = daysUntilRace(next);
+  document.getElementById('kpi-next-race').textContent = next.name;
+  document.getElementById('kpi-next-race-days').textContent = `${days} hari lagi · ${next.type}`;
+  document.getElementById('kpi-next-race-note').textContent = next.notes;
+
+  // Hero progress bar
+  const curW = getCurrentWeekNum();
+  document.getElementById('hero-bar-fill').style.width = (curW/PROGRAM_WEEKS*100)+'%';
+  document.getElementById('hero-bar-label-r').textContent = `Minggu ${curW} dari ${PROGRAM_WEEKS} (1 Mei – 31 Des)`;
+
+  renderCharts();
+}
+
+// ── CHARTS ─────────────────────────────────────────────────────────────────
+let charts = {};
+function destroyChart(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function renderCharts() {
+  // Long Run chart — all 52 weeks
+  destroyChart('longrun');
+  const actuals = Array.from({length:PROGRAM_WEEKS},(_,i)=>{
+    const lr = state.weeks[i+1]?.days?.[1]; // Sabtu=LR
+    return lr?.run.status==='Selesai'&&lr.run.aktualKm ? parseFloat(lr.run.aktualKm) : null;
+  });
+  // Race markers as annotation-like extra dataset
+  const raceMarkers = Array(PROGRAM_WEEKS).fill(null);
+  RACES.forEach(r => { raceMarkers[r.week-1] = LONG_RUN_TARGETS[r.week-1]+1; });
+
+  const ctx1 = document.getElementById('chartLongRun').getContext('2d');
+  charts.longrun = new Chart(ctx1, {
+    type:'bar',
+    data:{
+      labels: Array.from({length:PROGRAM_WEEKS},(_,i)=>'W'+(i+1)),
+      datasets:[
+        {label:'Target',data:LONG_RUN_TARGETS,backgroundColor:'rgba(224,228,239,0.9)',borderRadius:2,order:3},
+        {label:'Aktual',data:actuals,backgroundColor:'rgba(45,111,232,0.75)',borderRadius:2,order:2},
+        {type:'scatter',label:'Race',data:RACES.map(r=>({x:'W'+r.week,y:LONG_RUN_TARGETS[r.week-1]+2})),
+         backgroundColor:RACES.map(r=>r.color),pointRadius:8,pointStyle:'star',order:1},
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{
+      label:c=>{
+        if(c.dataset.label==='Race'){const race=RACES[c.dataIndex]; return `${race.emoji} ${race.name}`;}
+        return `${c.dataset.label}: ${c.parsed.y} km`;
+      }
+    }}},
+    scales:{
+      x:{ticks:{color:'#94a3b8',font:{size:9},maxRotation:0,callback:(v,i)=>i%4===0?'W'+(i+1):''},grid:{display:false}},
+      y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'rgba(224,228,239,0.8)'}}
+    }}
+  });
+
+  // Donut
+  destroyChart('donut');
+  let runDone=0,gymDone=0,remaining=0;
+  for(let w=1;w<=PROGRAM_WEEKS;w++){
+    (state.weeks[w]?.days||[]).forEach(d=>{
+      if(d.run.status==='Selesai')runDone++;else remaining++;
+      if(d.gym.status==='Selesai')gymDone++;else remaining++;
+    });
+  }
+  const ctx2 = document.getElementById('chartDonut').getContext('2d');
+  charts.donut = new Chart(ctx2,{type:'doughnut',data:{
+    labels:['Running','Gym','Remaining'],
+    datasets:[{data:[runDone,gymDone,remaining],
+      backgroundColor:['rgba(45,111,232,0.8)','rgba(124,58,237,0.8)','rgba(224,228,239,0.6)'],
+      borderColor:['#fff'],borderWidth:2}]
+  },options:{responsive:true,cutout:'70%',plugins:{legend:{display:false}}}});
+
+  // Completion %
+  destroyChart('comp');
+  const compData = Array.from({length:PROGRAM_WEEKS},(_,i)=>calcWeekStats(i+1).comp);
+  const compColors = compData.map((_,i)=>{
+    const race=RACES.find(r=>r.week===i+1);
+    return race ? race.color : compData[i]>=80?'rgba(22,163,95,0.7)':compData[i]>=50?'rgba(212,151,10,0.7)':'rgba(224,53,22,0.5)';
+  });
+  const ctx3 = document.getElementById('chartCompletion').getContext('2d');
+  charts.comp = new Chart(ctx3,{type:'bar',data:{
+    labels:Array.from({length:PROGRAM_WEEKS},(_,i)=>'W'+(i+1)),
+    datasets:[{data:compData,backgroundColor:compColors,borderRadius:2}]
+  },options:{responsive:true,plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:'#94a3b8',font:{size:9},maxRotation:0,callback:(v,i)=>i%4===0?'W'+(i+1):''},grid:{display:false}},
+            y:{max:100,ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'rgba(224,228,239,0.8)'}}}}});
+
+  // HR chart
+  destroyChart('hr');
+  const hrData = Array.from({length:PROGRAM_WEEKS},(_,i)=>calcWeekStats(i+1).avgHR||null);
+  const ctx4 = document.getElementById('chartHR').getContext('2d');
+  charts.hr = new Chart(ctx4,{type:'line',data:{
+    labels:Array.from({length:PROGRAM_WEEKS},(_,i)=>'W'+(i+1)),
+    datasets:[{data:hrData,borderColor:'rgba(224,120,0,0.9)',backgroundColor:'rgba(224,120,0,0.1)',
+               tension:0.4,fill:true,pointRadius:2}]
+  },options:{responsive:true,plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:'#94a3b8',font:{size:9},maxRotation:0,callback:(v,i)=>i%4===0?'W'+(i+1):''},grid:{display:false}},
+            y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'rgba(224,228,239,0.8)'}}}}});
+}
+
+// ── RACE CALENDAR ──────────────────────────────────────────────────────────
+// ── CUSTOM RACES (user-added) ───────────────────────────────────────────────
+function loadCustomRaces() {
+  const s = localStorage.getItem('custom_races_v1');
+  return s ? JSON.parse(s) : [];
+}
+function saveCustomRaces(arr) {
+  localStorage.setItem('custom_races_v1', JSON.stringify(arr));
+}
+function getAllRaces() {
+  // Merge built-in RACES + custom races, sorted by date
+  const customs = loadCustomRaces().map(r => ({...r, isCustom:true}));
+  const builtin = RACES.map(r => ({...r, isCustom:false}));
+  return [...builtin, ...customs].sort((a,b)=> new Date(a.date)-new Date(b.date));
+}
+
+function deleteCustomRace(id) {
+  const arr = loadCustomRaces().filter(r => r.id !== id);
+  saveCustomRaces(arr);
+  renderRaces();
+}
+
+function getRaceResult(name, field) {
+  const key = 'race_'+name.replace(/\s/g,'_')+'_'+field;
+  return localStorage.getItem(key) || '';
+}
+function saveRaceResult(name, field, val) {
+  const key = 'race_'+name.replace(/\s/g,'_')+'_'+field;
+  localStorage.setItem(key, val);
+}
+
+function renderRaceCard(r, grid) {
+  const rDate = new Date(r.date);
+  const now   = new Date();
+  const isPast = rDate < now;
+  const daysLeft = daysUntilRace(r);
+  // Calc week number from program start
+  const diffDays = Math.floor((rDate - PROGRAM_START) / (1000*60*60*24));
+  const rWeek = diffDays >= 0 ? Math.min(PROGRAM_WEEKS, Math.floor(diffDays/7)+1) : null;
+  const wStats = rWeek ? calcWeekStats(rWeek) : null;
+  const isA = r.priority==='A';
+  const colorMap = {'A':'#e03516','B':'#3b82f6','C':'#f59e0b'};
+  const rColor = r.color || colorMap[r.priority] || '#6b7280';
+  const emojiMap = {'FM':'⭐','HM':'🔵','10K':'🟡','5K':'🟢','Trail':'🏔️','Ultra':'🔴'};
+  const rEmoji = r.emoji || emojiMap[r.type] || '🏃';
+
+  const card = document.createElement('div');
+  card.className = 'race-card' + (isA?' race-card-a':'') + (isPast?' race-card-past':'');
+  card.style.cssText = `border-color:${rColor};`;
+  card.id = 'racecard-' + (r.id || r.name.replace(/\s/g,''));
+
+  card.innerHTML = `
+    <div class="race-card-header">
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
+          <span class="race-emoji">${rEmoji}</span>
+          <span class="race-name" id="rcname-${r.id||r.name}">${r.name}</span>
+          <span class="race-type-badge" style="background:${rColor}20;color:${rColor};border-color:${rColor}40">${r.type}</span>
+          <span class="race-priority" style="background:${isA?rColor:'#6b728020'};color:${isA?'#fff':'#6b7280'}">${r.priority}-Race</span>
+          ${r.isCustom?`<button onclick="deleteCustomRace('${r.id}')" style="margin-left:auto;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:0.75rem;padding:0.1rem 0.4rem;border-radius:4px;" title="Hapus race ini">✕ hapus</button>`:''}
+        </div>
+      </div>
+      <div class="race-countdown" style="color:${rColor}">
+        ${isPast
+          ? '<span style="color:var(--success);font-size:0.85rem;font-weight:600">✓ Selesai</span>'
+          : `<span style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:700">${daysLeft}</span><span style="font-size:0.65rem;display:block;text-align:center;color:var(--text-muted)">hari lagi</span>`}
+      </div>
+    </div>
+
+    <!-- EDITABLE FIELDS -->
+    <div class="race-edit-section">
+      <div class="race-edit-row">
+        <div class="race-edit-field">
+          <label class="race-field-label">📛 Nama Race</label>
+          <input class="race-field-input" value="${r.name}" placeholder="Nama race..." onchange="updateRaceField('${r.id||'__'+r.name}','name',this.value,'${r.isCustom}')">
+        </div>
+        <div class="race-edit-field">
+          <label class="race-field-label">📅 Tanggal</label>
+          <input class="race-field-input" type="date" value="${r.date}" onchange="updateRaceField('${r.id||'__'+r.name}','date',this.value,'${r.isCustom}')">
+        </div>
+        <div class="race-edit-field">
+          <label class="race-field-label">🏃 Jenis</label>
+          <select class="race-field-input" onchange="updateRaceField('${r.id||'__'+r.name}','type',this.value,'${r.isCustom}')">
+            ${['5K','10K','HM','FM','Trail','Ultra'].map(t=>`<option${r.type===t?' selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="race-edit-field">
+          <label class="race-field-label">⭐ Priority</label>
+          <select class="race-field-input" onchange="updateRaceField('${r.id||'__'+r.name}','priority',this.value,'${r.isCustom}')">
+            ${['A','B','C'].map(p=>`<option${r.priority===p?' selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="race-edit-field" style="margin-top:0.5rem;">
+        <label class="race-field-label">📝 Target & Catatan</label>
+        <input class="race-field-input" style="width:100%;" value="${r.notes||''}" placeholder="Target race, strategi, catatan..." onchange="updateRaceField('${r.id||'__'+r.name}','notes',this.value,'${r.isCustom}')">
+      </div>
+    </div>
+
+    <div class="race-meta" style="margin-top:0.5rem;">
+      <span>📅 ${rDate.getDate()} ${ID_MONTHS[rDate.getMonth()]} ${rDate.getFullYear()}</span>
+      ${rWeek?`<span>📍 Minggu ${rWeek} program</span><span>📊 W${rWeek}: ${wStats?.comp||0}%</span>`:'<span style="color:var(--warning)">📍 Di luar periode program</span>'}
+    </div>
+
+    ${isA?`<div class="race-a-banner">⭐ A-RACE — PUNCAK LATIHAN</div>`:''}
+
+    <div class="race-tracking">
+      <div class="race-track-title">📊 Hasil Race</div>
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:0.5rem;">
+        <div class="input-row"><span class="input-label" style="width:70px">Finish Time</span><input class="edit-input" style="width:100px" placeholder="hh:mm:ss" value="${getRaceResult(r.name,'time')}" onchange="saveRaceResult('${r.name}','time',this.value)"></div>
+        <div class="input-row"><span class="input-label" style="width:40px">Pace</span><input class="edit-input" style="width:90px" placeholder="mm:ss/km" value="${getRaceResult(r.name,'pace')}" onchange="saveRaceResult('${r.name}','pace',this.value)"></div>
+        <div class="input-row"><span class="input-label" style="width:40px">Avg HR</span><input class="edit-input" style="width:70px" placeholder="bpm" value="${getRaceResult(r.name,'hr')}" onchange="saveRaceResult('${r.name}','hr',this.value)"></div>
+        <div class="input-row" style="flex:1;min-width:180px"><span class="input-label" style="width:55px">Catatan</span><input class="edit-input" style="width:100%;max-width:280px" placeholder="Kesan race, lesson learned..." value="${getRaceResult(r.name,'note')}" onchange="saveRaceResult('${r.name}','note',this.value)"></div>
+      </div>
+    </div>
+  `;
+  grid.appendChild(card);
+}
+
+function updateRaceField(id, field, val, isCustom) {
+  if(isCustom === 'true' || isCustom === true) {
+    const arr = loadCustomRaces();
+    const r = arr.find(r=>r.id===id);
+    if(r) { r[field] = val; saveCustomRaces(arr); }
+  } else {
+    // Update built-in race in-memory (persisted via race results storage)
+    const raceKey = 'raceoverride_' + id.replace(/\s/g,'_') + '_' + field;
+    localStorage.setItem(raceKey, val);
+    const r = RACES.find(r=>r.name===id.replace(/^__/,''));
+    if(r) r[field] = val;
+  }
+  // Soft re-render just the countdown/meta without full refresh
+}
+
+function addNewRace() {
+  const customs = loadCustomRaces();
+  const newRace = {
+    id: 'custom_' + Date.now(),
+    name: 'Race Baru',
+    date: '2026-12-01',
+    type: '10K',
+    priority: 'C',
+    emoji: '🏃',
+    color: '#6b7280',
+    notes: 'Isi target dan strategi race...',
+    isCustom: true,
+  };
+  customs.push(newRace);
+  saveCustomRaces(customs);
+  renderRaces();
+  // Scroll to new card
+  setTimeout(() => {
+    const el = document.getElementById('racecard-' + newRace.id);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 100);
+}
+
+function renderRaces() {
+  const grid = document.getElementById('racesGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+
+  // Add Race button at top
+  const addBtn = document.createElement('div');
+  addBtn.style.cssText = 'grid-column:1/-1;display:flex;justify-content:flex-end;margin-bottom:0.5rem;';
+  addBtn.innerHTML = `<button class="save-btn" onclick="addNewRace()" style="background:var(--teal);gap:0.4rem;display:flex;align-items:center;">
+    <span style="font-size:1.1rem">+</span> Tambah Race Baru
+  </button>`;
+  grid.appendChild(addBtn);
+
+  // Render all races (built-in + custom), sorted by date
+  const allRaces = getAllRaces();
+  allRaces.forEach(r => renderRaceCard(r, grid));
+}
+
+// ── SCHEDULE ───────────────────────────────────────────────────────────────
+function buildWeekList() {
+  const list = document.getElementById('weekList');
+  list.innerHTML = '';
+  // Group by month
+  let lastMonth = -1;
+  for(let w=1;w<=PROGRAM_WEEKS;w++) {
+    const startDate = sessionDate(w,0);
+    const month = startDate.getMonth();
+    if(month !== lastMonth) {
+      lastMonth = month;
+      const lbl = document.createElement('div');
+      lbl.className = 'sidebar-label';
+      lbl.style.padding = '0.6rem 1.25rem 0.2rem';
+      lbl.textContent = ID_MONTHS[month] + ' ' + startDate.getFullYear();
+      list.appendChild(lbl);
+    }
+    const stats = calcWeekStats(w);
+    const wt = getWeekType(w);
+    const dotClass = 'week-dot' + (stats.comp===100?' done':stats.comp>0?' partial':w===currentWeek?' current':'');
+    const btn = document.createElement('button');
+    btn.className = 'week-btn'+(w===currentWeek?' active':'');
+    btn.innerHTML = `<span class="${dotClass}"></span><span style="flex:1"><span style="display:block">W${w} — ${sessionDate(w,0).getDate()} ${ID_MONTHS[sessionDate(w,0).getMonth()]}</span><span style="font-size:0.6rem;color:${wt.isRace?wt.color:'var(--text-muted)'}">${wt.label}</span></span><span class="week-phase">${stats.comp}%</span>`;
+    btn.onclick = () => { currentWeek=w; state.currentWeek=w; saveState(); buildWeekList(); renderSchedule(); };
+    list.appendChild(btn);
+  }
+}
+
+function renderSchedule() {
+  buildWeekList();
+  const phase = getPhase(currentWeek);
+  const wt = getWeekType(currentWeek);
+  const race = RACES.find(r=>r.week===currentWeek);
+  document.getElementById('sched-week-title').textContent = `Minggu ${currentWeek}`;
+  document.getElementById('sched-phase-tag').textContent = `F${phase}: ${PHASE_NAMES[phase]}`;
+  document.getElementById('sched-date-range').textContent = weekDateRange(currentWeek);
+  const stats = calcWeekStats(currentWeek);
+  document.getElementById('sched-week-comp').textContent = stats.comp+'%';
+
+  // Race banner
+  const raceBanner = document.getElementById('sched-race-banner');
+  if(race) {
+    raceBanner.style.display='flex';
+    raceBanner.style.background = race.color+'18';
+    raceBanner.style.borderColor = race.color+'60';
+    raceBanner.innerHTML = `<span style="font-size:1.3rem">${race.emoji}</span><div><div style="font-weight:700;color:${race.color}">${race.name}</div><div style="font-size:0.75rem;color:var(--text-dim)">${race.type} · ${race.date} · ${race.notes}</div></div><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:1.2rem;color:${race.color};font-weight:700">${daysUntilRace(race)} hari</span>`;
+  } else { raceBanner.style.display='none'; }
+
+  const grid = document.getElementById('sessionsGrid');
+  grid.innerHTML = '';
+  const days = state.weeks[currentWeek]?.days || [];
+  // Keep long run target fresh
+  if(days[1]) days[1].run.distKm = LONG_RUN_TARGETS[currentWeek-1]; // Sabtu = Long Run index 1
+
+  days.forEach((d, di) => {
+    const realDate = sessionDate(currentWeek, d.dayOffset);
+    const dateStr  = fmtDate(realDate);
+    const bothDone = d.run.status==='Selesai' && d.gym.status==='Selesai';
+    const anyCedera= d.run.status==='Cedera' || d.gym.status==='Cedera';
+    const anySkip  = d.run.status==='Skip' || d.gym.status==='Skip';
+    const borderClr= bothDone?'var(--success)':anyCedera?'var(--danger)':anySkip?'var(--warning)':'var(--border)';
+    const card = document.createElement('div');
+    card.className='day-dual-card';
+    card.innerHTML=`
+      <div class="day-header" style="border-left:3px solid ${borderClr}">
+        <div><div class="session-day">${d.day}</div><div class="session-date">${dateStr}</div></div>
+        ${bothDone?'<span style="margin-left:auto;font-size:0.7rem;background:rgba(22,163,95,0.12);color:var(--success);padding:0.2rem 0.6rem;border-radius:10px;font-weight:600">✓ Selesai</span>':''}
+      </div>
+      <div class="dual-sessions">
+        <div class="sub-session run-sub">
+          <div class="sub-header" style="flex-wrap:wrap;gap:0.4rem;">
+            <span class="session-type-badge badge-run">🏃 Lari</span>
+            <select class="status-select status-sm type-select-run" style="min-width:145px;" onchange="changeRunType(${di},this.value)">
+              ${Object.entries(RUN_TYPES).map(([k,v])=>`<option value="${k}"${(d.run.typeKey||'easy')===k?' selected':''}>${v.icon} ${v.label}</option>`).join('')}
+            </select>
+            <select class="status-select status-sm" onchange="updateDay(${di},'run','status',this.value)">
+              ${['Belum','Selesai','Skip','Cedera','Reschedule'].map(v=>`<option value="${v}"${d.run.status===v?' selected':''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div class="session-focus" id="runfocus-${currentWeek}-${di}">${RUN_TYPES[d.run.typeKey||'easy']?.icon||'🟢'} ${d.run.focus}</div>
+          <div class="session-detail" id="rundetail-${currentWeek}-${di}">${d.run.detail}</div>
+          <div class="session-targets" style="margin-bottom:0.6rem">
+            ${d.run.distKm?`<span class="target-pill">${d.run.distKm} km</span>`:''}
+            <span class="target-pill" id="runhr-${currentWeek}-${di}">${d.run.targetHR}</span>
+            ${(d.run.typeKey==='long'||d.run.isLongRun)?'<span class="target-pill" style="background:rgba(224,53,22,0.1);color:var(--accent)">🎯 Long Run</span>':''}
+            ${race&&di===1?`<span class="target-pill" style="background:${race.color}20;color:${race.color}">🏁 Race Week!</span>`:''}
+          </div>
+          <div class="sub-inputs">
+            <div class="input-row"><span class="input-label">Jarak</span><input class="edit-input" type="number" placeholder="km" step="0.1" value="${d.run.aktualKm||''}" onchange="updateDay(${di},'run','aktualKm',this.value)"><span class="unit-lbl">km</span></div>
+            <div class="input-row"><span class="input-label">Durasi</span><input class="edit-input" type="number" placeholder="mnt" value="${d.run.aktualDur||''}" onchange="updateDay(${di},'run','aktualDur',this.value)"><span class="unit-lbl">mnt</span></div>
+            <div class="input-row"><span class="input-label">Avg HR</span><input class="edit-input" type="number" placeholder="bpm" value="${d.run.avgHR||''}" onchange="updateDay(${di},'run','avgHR',this.value)"><span class="unit-lbl">bpm</span></div>
+            <div class="input-row"><span class="input-label">RPE</span><input class="edit-input" type="number" placeholder="1-10" min="1" max="10" value="${d.run.rpe||''}" onchange="updateDay(${di},'run','rpe',this.value)"><span class="unit-lbl">/10</span></div>
+            <div class="input-row" style="align-items:flex-start"><span class="input-label" style="padding-top:4px">Catatan</span><textarea class="notes-input" rows="2" placeholder="Catatan lari..." onchange="updateDay(${di},'run','catatan',this.value)">${d.run.catatan||''}</textarea></div>
+          </div>
+        </div>
+        <div class="sub-session gym-sub">
+          <div class="sub-header" style="flex-wrap:wrap;gap:0.4rem;">
+            <span class="session-type-badge badge-gym">🏋️ Gym</span>
+            <select class="status-select status-sm type-select-gym" style="min-width:155px;" onchange="changeGymType(${di},this.value)">
+              ${Object.entries(GYM_TYPES).map(([k,v])=>`<option value="${k}"${(d.gym.typeKey||'upper')===k?' selected':''}>${v.icon} ${v.label}</option>`).join('')}
+            </select>
+            <select class="status-select status-sm" onchange="updateDay(${di},'gym','status',this.value)">
+              ${['Belum','Selesai','Skip','Cedera','Reschedule'].map(v=>`<option value="${v}"${d.gym.status===v?' selected':''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div class="session-focus" id="gymfocus-${currentWeek}-${di}">${GYM_TYPES[d.gym.typeKey||'upper']?.icon||'💪'} ${d.gym.focus}</div>
+          <div class="session-detail" id="gymdetail-${currentWeek}-${di}">${d.gym.detail}</div>
+          <div class="session-targets" style="margin-bottom:0.6rem">
+            <span class="target-pill">${d.gym.dur} mnt</span>
+            <span class="target-pill" id="gymhr-${currentWeek}-${di}">${d.gym.targetHR}</span>
+          </div>
+          <div class="sub-inputs">
+            <div class="input-row"><span class="input-label">Durasi</span><input class="edit-input" type="number" placeholder="mnt" value="${d.gym.aktualDur||''}" onchange="updateDay(${di},'gym','aktualDur',this.value)"><span class="unit-lbl">mnt</span></div>
+            <div class="input-row"><span class="input-label">Beban</span><input class="edit-input" type="text" placeholder="mis: Squat 60kg" value="${d.gym.beban||''}" onchange="updateDay(${di},'gym','beban',this.value)"></div>
+            <div class="input-row" style="align-items:flex-start"><span class="input-label" style="padding-top:4px">Catatan</span><textarea class="notes-input" rows="2" placeholder="Catatan gym..." onchange="updateDay(${di},'gym','catatan',this.value)">${d.gym.catatan||''}</textarea></div>
+          </div>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+function updateDay(dayIdx,sub,field,val){ state.weeks[currentWeek].days[dayIdx][sub][field]=val; }
+
+function changeRunType(dayIdx, typeKey) {
+  const t = RUN_TYPES[typeKey];
+  if(!t) return;
+  const d = state.weeks[currentWeek].days[dayIdx];
+  d.run.typeKey   = typeKey;
+  d.run.focus     = t.label;
+  d.run.detail    = t.detail;
+  d.run.targetHR  = t.targetHR;
+  d.run.isLongRun = (typeKey === 'long');
+  // Update DOM directly without full re-render
+  const w = currentWeek;
+  const focusEl  = document.getElementById(`runfocus-${w}-${dayIdx}`);
+  const detailEl = document.getElementById(`rundetail-${w}-${dayIdx}`);
+  const hrEl     = document.getElementById(`runhr-${w}-${dayIdx}`);
+  if(focusEl)  focusEl.textContent  = t.icon + ' ' + t.label;
+  if(detailEl) detailEl.textContent = t.detail;
+  if(hrEl)     hrEl.textContent     = t.targetHR;
+}
+
+function changeGymType(dayIdx, typeKey) {
+  const t = GYM_TYPES[typeKey];
+  if(!t) return;
+  const d = state.weeks[currentWeek].days[dayIdx];
+  d.gym.typeKey = typeKey;
+  d.gym.focus   = t.label;
+  d.gym.detail  = t.detail;
+  const w = currentWeek;
+  const focusEl  = document.getElementById(`gymfocus-${w}-${dayIdx}`);
+  const detailEl = document.getElementById(`gymdetail-${w}-${dayIdx}`);
+  if(focusEl)  focusEl.textContent  = t.icon + ' ' + t.label;
+  if(detailEl) detailEl.textContent = t.detail;
+}
+function changeWeek(dir){ const nw=Math.max(1,Math.min(PROGRAM_WEEKS,currentWeek+dir)); currentWeek=nw;state.currentWeek=nw;saveState();buildWeekList();renderSchedule(); }
+function saveAll(){ saveState(); const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);buildWeekList(); const s=calcWeekStats(currentWeek);document.getElementById('sched-week-comp').textContent=s.comp+'%'; }
+
+// ── GYM ────────────────────────────────────────────────────────────────────
+const GYM_EXERCISES = {
+  upper:[
+    {name:'Bench Press',sets:'4×6-8',rest:'120s',muscle:'Dada, Trisep',tips:'Scapula rapat, bar ke mid-chest'},
+    {name:'Incline DB Press',sets:'3×8-10',rest:'90s',muscle:'Upper Chest',tips:'Siku 45°, turun terkontrol'},
+    {name:'Cable Fly',sets:'3×12',rest:'60s',muscle:'Dada',tips:'Rasakan kontraksi, jangan kunci siku'},
+    {name:'Lat Pulldown',sets:'3×10',rest:'90s',muscle:'Lat, Upper Back',tips:'Tarik ke dada atas, dada terbuka'},
+    {name:'Seated Cable Row',sets:'3×10',rest:'90s',muscle:'Mid Back',tips:'Tarik siku ke belakang'},
+    {name:'Barbell Curl',sets:'3×10',rest:'60s',muscle:'Bisep',tips:'Siku dekat badan'},
+    {name:'Triceps Pushdown',sets:'3×12',rest:'60s',muscle:'Trisep',tips:'Siku terkunci di samping'},
+    {name:'Face Pull',sets:'3×12',rest:'60s',muscle:'Rear Delt',tips:'Tarik ke wajah, siku tinggi'},
+    {name:'Plank',sets:'3×60s',rest:'45s',muscle:'Core',tips:'Pinggul sejajar bahu'},
+    {name:'Hanging Knee Raise',sets:'3×12',rest:'60s',muscle:'Core Bawah',tips:'Angkat lutut terkontrol'},
+  ],
+  legs:[
+    {name:'Back Squat',sets:'4×5-8',rest:'120s',muscle:'Quad, Glutes',tips:'Lutut searah jari kaki, core kuat'},
+    {name:'Romanian Deadlift',sets:'4×8',rest:'120s',muscle:'Hamstring, Glutes',tips:'Hip hinge, punggung netral'},
+    {name:'Walking Lunge',sets:'3×10/kaki',rest:'90s',muscle:'Quad, Glutes',tips:'Langkah stabil'},
+    {name:'Leg Press',sets:'3×10',rest:'90s',muscle:'Quad, Glutes',tips:'Punggung menempel'},
+    {name:'Calf Raise',sets:'4×12-15',rest:'60s',muscle:'Betis',tips:'Naik penuh, tahan 1 detik'},
+    {name:'Hamstring Curl',sets:'3×10',rest:'60s',muscle:'Hamstring',tips:'Jangan angkat pinggul'},
+    {name:'Hip Thrust',sets:'3×10',rest:'90s',muscle:'Glutes',tips:'Tahan kontraksi atas'},
+    {name:'Dead Bug',sets:'3×12/sisi',rest:'45s',muscle:'Core',tips:'Punggung bawah menempel lantai'},
+  ],
+  chest:[
+    {name:'DB Bench Press',sets:'4×8-10',rest:'90s',muscle:'Dada',tips:'Gerak penuh, kontrol saat turun'},
+    {name:'Push Up',sets:'3×max',rest:'60s',muscle:'Dada, Core',tips:'Tubuh lurus, dada dekat lantai'},
+    {name:'Cable Fly',sets:'3×12',rest:'60s',muscle:'Dada',tips:'Kontraksi penuh di tengah'},
+    {name:'Bulgarian Split Squat',sets:'3×8/kaki',rest:'90s',muscle:'Glutes, Quad',tips:'Badan stabil'},
+    {name:'Hip Thrust',sets:'3×10',rest:'90s',muscle:'Glutes',tips:'Tahan di atas'},
+    {name:'Shoulder Press',sets:'3×10',rest:'90s',muscle:'Deltoid',tips:'Core kuat, jangan melengkung'},
+    {name:'Lateral Raise',sets:'3×12',rest:'60s',muscle:'Deltoid Samping',tips:'Angkat sampai sejajar bahu'},
+    {name:'EZ Bar Curl',sets:'3×10',rest:'60s',muscle:'Bisep',tips:'Terkontrol turun'},
+    {name:'Rope Triceps',sets:'3×12',rest:'60s',muscle:'Trisep',tips:'Buka rope di bawah'},
+    {name:'Cable Crunch',sets:'3×15',rest:'45s',muscle:'Perut',tips:'Crunch dari tulang rusuk'},
+  ]
+};
+function renderGym() { showGymTab(currentGymTab); }
+function showGymTab(tab) {
+  currentGymTab = tab;
+  document.querySelectorAll('.gym-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.gym-tab[data-tab="${tab}"]`)?.classList.add('active');
+  const content = document.getElementById('gymContent');
+  content.innerHTML = '';
+  (GYM_EXERCISES[tab]||[]).forEach((ex,i)=>{
+    const key=`gym_${tab}_${i}`;
+    const saved=localStorage.getItem(key)||'';
+    const card=document.createElement('div');
+    card.className='exercise-card';
+    card.innerHTML=`
+      <div><div class="exercise-name">${ex.name}</div><div class="exercise-meta">${ex.tips}</div></div>
+      <div class="exercise-muscle">${ex.muscle}</div>
+      <div class="exercise-set">${ex.sets}<br><span style="color:var(--text-muted);font-size:0.65rem">${ex.rest}</span></div>
+      <div><div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:0.2rem">Beban (kg)</div>
+      <input class="beban-input" type="text" placeholder="—" value="${saved}" onchange="localStorage.setItem('${key}',this.value)"></div>`;
+    content.appendChild(card);
+  });
+}
+
+// ── PROGRAM ────────────────────────────────────────────────────────────────
+function renderProgram() {
+  destroyChart('programfull');
+  const actuals = LONG_RUN_TARGETS.map((_,i)=>{
+    const lr=state.weeks[i+1]?.days?.[1]; // Sabtu=LR
+    return lr?.run.status==='Selesai'&&lr.run.aktualKm ? parseFloat(lr.run.aktualKm):null;
+  });
+  const bgColors = LONG_RUN_TARGETS.map((_,i)=>{
+    const race=RACES.find(r=>r.week===i+1);
+    if(race) return race.color+'CC';
+    return i+1>=33?'rgba(0,168,133,0.5)':'rgba(224,120,0,0.45)';
+  });
+  const ctx=document.getElementById('chartProgramFull').getContext('2d');
+  charts.programfull=new Chart(ctx,{type:'bar',data:{
+    labels:Array.from({length:PROGRAM_WEEKS},(_,i)=>'W'+(i+1)),
+    datasets:[
+      {label:'Target',data:LONG_RUN_TARGETS,backgroundColor:bgColors,borderRadius:2,order:2},
+      {label:'Aktual',data:actuals,backgroundColor:'rgba(45,111,232,0.8)',borderRadius:2,order:1}
+    ]
+  },options:{responsive:true,plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:'#94a3b8',font:{size:9},maxRotation:0,callback:(v,i)=>i%4===0?'W'+(i+1):''},grid:{display:false}},
+            y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'rgba(224,228,239,0.8)'}}}}});
+
+  const tbody=document.getElementById('programTableBody');
+  tbody.innerHTML='';
+  for(let w=1;w<=PROGRAM_WEEKS;w++){
+    const phase=getPhase(w);
+    const wt=getWeekType(w);
+    const lrDay=state.weeks[w]?.days?.[1]; // Sabtu=LR
+    const aktual=lrDay?.run.aktualKm?parseFloat(lrDay.run.aktualKm):null;
+    const status=lrDay?.run.status||'Belum';
+    const t=LONG_RUN_TARGETS[w-1];
+    const pct=aktual?Math.min(aktual/t*100,100):0;
+    const startD=sessionDate(w,0);
+    const isCur=w===currentWeek;
+    const race=RACES.find(r=>r.week===w);
+    const sColor=status==='Selesai'?'var(--success)':status==='Skip'?'var(--warning)':status==='Cedera'?'var(--danger)':'var(--text-muted)';
+    const tr=document.createElement('tr');
+    if(isCur) tr.className='current-row';
+    tr.innerHTML=`
+      <td><span style="font-family:'JetBrains Mono';font-size:0.8rem">W${w}${isCur?' 👈':''}</span><br><span style="font-size:0.65rem;color:var(--text-muted)">${fmtDate(startD)}</span></td>
+      <td class="phase-cell">F${phase}: ${PHASE_NAMES[phase]}</td>
+      <td><span style="font-family:'JetBrains Mono';font-size:0.9rem;color:var(--accent2)">${t} km</span></td>
+      <td><span style="font-size:0.75rem;color:${wt.color}">${wt.label}</span>${race?`<br><span style="font-size:0.65rem;color:${race.color}">${race.name}</span>`:''}</td>
+      <td><span style="font-family:'JetBrains Mono';font-size:0.85rem;color:var(--run-color)">${aktual?aktual+' km':'—'}</span></td>
+      <td><div class="progress-mini"><div class="progress-mini-fill" style="width:${pct}%;background:${wt.color}"></div></div></td>
+      <td><span style="font-size:0.75rem;color:${sColor}">${status}</span></td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+// ── ANALYSIS ───────────────────────────────────────────────────────────────
+function renderAnalysis() {
+  const tot=calcTotals();
+  const rate=tot.totalSessions>0?Math.round(tot.doneSessions/tot.totalSessions*100):0;
+  const curW=getCurrentWeekNum();
+  const phase=getPhase(curW);
+  const nextRace=getNextRace();
+  const daysToRace=daysUntilRace(nextRace);
+  const weeksToRace=Math.ceil(daysToRace/7);
+
+  // Phase-specific + race-specific recommendations
+  const recos = [
+    {
+      icon:'📊', title:'Status Program 2026', full:true,
+      items:[
+        `Completion rate: ${rate}% — ${rate>=80?'Konsistensi sangat baik! Pertahankan.':rate>=60?'On track, dorong lagi konsistensi gym.':'Perlu peningkatan. Review jadwal dan manajemen waktu.'}`,
+        `Total running: ${tot.totalKm.toFixed(1)} km dari target ~1.200 km sepanjang 2026.`,
+        `Gym sessions: ${tot.gymDone} selesai — penting untuk kekuatan dan injury prevention.`,
+        `Long run peak: ${tot.peakLR.toFixed(1)} km — target race day 42.195 km (Sarawak Energy Marathon).`,
+        `Saat ini Minggu ${curW} dari 52 — ${PHASE_NAMES[phase]}.`,
+      ]
+    },
+    {
+      icon:nextRace.emoji, title:`Next Race: ${nextRace.name}`,
+      items:[
+        `${daysToRace} hari (${weeksToRace} minggu) menuju ${nextRace.name} (${nextRace.type}).`,
+        nextRace.priority==='A' ? `⭐ A-Race! ${nextRace.name === 'Sarawak Energy Marathon' ? 'MARATHON PERTAMA ADI — semua latihan menuju hari ini.' : 'TARGET PR dari Sarawak Marathon. Borobudur adalah penutup musim terbaik!'}` : `${nextRace.priority}-Race — stepping stone menuju target utama.`,
+        nextRace.type==='FM' ? `3 minggu sebelum race: volume turun 30%, intensitas dijaga. 1 minggu sebelum: taper total.` :
+        nextRace.type==='HM' ? `Seminggu sebelum HM: long run maks 14 km, kurangi interval, prioritas tidur & hidrasi.` :
+        `Seminggu sebelum 10K: long run maks 10 km, satu sesi strides ringan, sisanya recovery.`,
+        `Nutrisi race week: perbanyak karbohidrat 48 jam sebelum, hindari makanan baru.`,
+      ]
+    },
+    {
+      icon:'🏁', title:'Race Strategy per Event',
+      items:[
+        `YelloRun 10K (7 Jun, W6): Target sub-60 mnt. Pace konservatif — race pertama, enjoy! Test gel & hidrasi strategy untuk marathon nanti.`,
+        `JAKIM HM (14 Jun, W7): 1 minggu setelah YelloRun — jangan push. Target sub-2:30, pace 7:00/km, jaga Zone 2. Simulasi fueling marathon.`,
+        `Sarawak Energy Marathon (9 Agt, W15): A-RACE #1! Target finish < 5 jam. Pace awal 7:10/km, negative split 2nd half. Gel tiap 5-6 km.`,
+        `UI HM (11 Okt, W24): Comeback race post-Sarawak! Target sub-2:20. Ukur fitness recovery & mulai build untuk Borobudur.`,
+        `Alfamurt Run 10K (18 Okt, W25): Fun run 1 minggu setelah UI HM. Target sub-55 mnt. Nikmati — ini juga prep speed work Borobudur.`,
+        `Borobudur Marathon (16 Nov, W29): A-RACE #2! PR target dari Sarawak — aim sub-4:45. Route di Candi Borobudur, Magelang. Scenic & cultural!`,
+      ]
+    },
+    {
+      icon:'📅', title:`Fase ${phase}: ${PHASE_NAMES[phase]}`,
+      items: phase<=2 ? [
+        'Fokus: aerobic base. Semua lari harus bisa bicara kalimat pendek.',
+        'Gym: progressive overload 2.5 kg per 2 minggu jika form sempurna.',
+        'Long run jangan melebihi 10% dari total mileage mingguan.',
+        'Cukup tidur 7-9 jam — recovery sama pentingnya dengan latihan.',
+      ] : phase===3 ? [
+        'Volume naik signifikan — perhatikan tanda overtraining.',
+        'Long run 20-28 km: wajib fueling gel setiap 45 mnt, elektrolit setiap jam.',
+        'Tempo run: 20-30 mnt @ RPE 7. Bangun lactate threshold.',
+        'Gym leg: jangan failure set 2 hari sebelum long run.',
+      ] : phase===4 ? [
+        'Race specificity: latihan mirip kondisi race (waktu, cuaca, terrain).',
+        'Alfamurt 10K sebagai race simulasi — catat split dan pacing experience.',
+        'Mulai test race day nutrition strategy secara konsisten di long run.',
+        'Volume gym sedikit dikurangi — prioritaskan energy untuk running.',
+      ] : phase===5 ? [
+        'Peak phase! UI HM sebagai final test sebelum Sarawak Marathon.',
+        'Post UI HM: 3 minggu taper — volume turun, intensitas dijaga.',
+        'Persiapan mental marathon: visualisasi race, pelajari route Kuching Isthmus.',
+        'Cek perlengkapan race: sepatu (min 500 km tersisa), gel, pakaian, jam GPS.',
+        'Tidur 8+ jam sangat kritis di minggu-minggu peak ini.',
+      ] : phase===6 ? [
+        '🏁 RACE WEEK! Taper sempurna — jangan tambah latihan.',
+        'Karbohidrat loading 48-72 jam sebelum race: nasi, pasta, roti.',
+        'Minum 500ml air + elektrolit ekstra setiap hari race week.',
+        'Briefing route: Kuching Isthmus via Darul Hana Bridge, State Assembly Building.',
+        'Race day: wake up 3 jam sebelum start, makan ringan 2 jam sebelum.',
+      ] : [
+        'Post-race recovery: W33-36 sangat ringan — jalan, stretchin, foam rolling.',
+        'Jangan lari sama sekali 1-2 minggu post-marathon. Biarkan tubuh recover.',
+        'Evaluasi marathon: apa yang berhasil, apa yang perlu diperbaiki untuk race berikut.',
+        'Gym bisa dimulai lagi W35 dengan beban ringan 50% dari sebelumnya.',
+        'W37+: maintenance — jaga kebugaran dan nikmati pencapaian 2026!',
+      ]
+    },
+    {
+      icon:'🏋️', title:'Gym + Running Integration',
+      items:[
+        'Jangan heavy leg (squat, RDL) dalam 48 jam sebelum long run atau race.',
+        'Progressive overload gym: catat beban tiap sesi di tab Gym Detail.',
+        'Running mileage naik = gym volume sedikit turun — ini normal dan disengaja.',
+        'Post long run: prioritaskan protein 1.6-2g/kgBB untuk muscle recovery.',
+        'Upper body gym tidak mempengaruhi lari — tetap konsisten meski volume lari tinggi.',
+      ]
+    },
+    {
+      icon:'❤️', title:'Heart Rate & Periodisasi',
+      items:[
+        'Zone 2 target: 60-70% HRmax. Estimasi: 220-usia.',
+        'Jika Avg HR naik di pace yang sama → perlu lebih banyak Zone 2 base.',
+        'Race week: HR cenderung lebih rendah dari biasa (taper effect) — ini normal.',
+        'Post-marathon: HR bisa lebih tinggi 1-2 minggu — tanda tubuh masih recovery.',
+        'Isi field HR setiap sesi untuk tracking progress aerobic fitness.',
+      ]
+    },
+    {
+      icon:'⚡', title:'Injury Prevention & Recovery',
+      items:[
+        'Foam roll: IT band, calf, glutes, hip flexor — 10 mnt setiap malam.',
+        'Nyeri knee atau shin: kurangi mileage 20%, perkuat hip abductor.',
+        'Blisters di marathon: test kaos kaki anti-blister dan sepatu dari sekarang.',
+        'Overtraining signs: HR istirahat naik +5 bpm, mood buruk, performa turun.',
+        'Sepatu: ganti setiap 600-800 km. Catat total km untuk monitoring.',
+      ]
+    },
+    {
+      icon:'🍱', title:'Nutrisi & Hidrasi Marathon',
+      items:[
+        'Race day gel strategy: gel pertama di km 7, lanjut setiap 5-6 km.',
+        'Hidrasi: 400-600 ml/jam saat marathon. Minum di setiap aid station.',
+        'Latihan gut: test gel, elektrolit, dan fueling di setiap long run ≥14 km.',
+        'Pre-race dinner: karbohidrat familiar, protein sedang, hindari lemak/serat tinggi.',
+        'Karbohidrat loading: 8-10g/kgBB/hari selama 2-3 hari sebelum marathon.',
+      ]
+    },
+  ];
+
+  const grid=document.getElementById('recoGrid');
+  grid.innerHTML='';
+  recos.forEach(r=>{
+    const card=document.createElement('div');
+    card.className='reco-card'+(r.full?' full-width':'');
+    card.innerHTML=`<div class="reco-header"><span class="reco-icon">${r.icon}</span><span class="reco-title">${r.title}</span></div>
+    <ul class="reco-list">${r.items.map(i=>`<li class="reco-item">${i}</li>`).join('')}</ul>`;
+    grid.appendChild(card);
+  });
+
+  // Radar chart — phase performance
+  destroyChart('radar');
+  const radarPhases = [1,2,3,4,5,8]; // 6 key phases for radar
+  const phasePerf = radarPhases.map(p=>{
+    const [s,e]=PHASES[p];
+    let tot=0,done=0;
+    for(let w=s;w<=e;w++){const st=calcWeekStats(w);tot+=st.total;done+=st.done;}
+    return tot>0?Math.round(done/tot*100):0;
+  });
+  const ctx=document.getElementById('chartRadar').getContext('2d');
+  charts.radar=new Chart(ctx,{type:'radar',data:{
+    labels:['F1 Base','F2 YelloRun+JAKIM','F3 Sarawak Build','F4 Sarawak FM','F5 Borobudur Build','F6 Borobudur FM'],
+    datasets:[
+      {label:'Completion %',data:phasePerf,backgroundColor:'rgba(224,53,22,0.15)',borderColor:'rgba(224,53,22,0.8)',pointBackgroundColor:'rgba(224,53,22,1)',pointRadius:4},
+      {label:'Target',data:[100,100,100,100,100,100],backgroundColor:'rgba(200,210,230,0.2)',borderColor:'rgba(180,190,210,0.6)',pointRadius:0,borderDash:[4,4]}
+    ]
+  },options:{responsive:true,plugins:{legend:{labels:{color:'#4a5568',font:{size:11}}}},
+    scales:{r:{ticks:{color:'#94a3b8',backdropColor:'transparent',stepSize:25},grid:{color:'rgba(224,228,239,0.9)'},pointLabels:{color:'#4a5568',font:{size:10}},min:0,max:100}}}});
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+// Load any persisted overrides for built-in races
+RACES.forEach(r => {
+  ['name','date','type','priority','notes','color'].forEach(field => {
+    const key = 'raceoverride_' + r.name.replace(/\s/g,'_') + '_' + field;
+    const val = localStorage.getItem(key);
+    if(val) r[field] = val;
+  });
+});
+
+const script = document.createElement('script');
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';
+script.onload = () => {
+  Chart.defaults.color='#4a5568';
+  Chart.defaults.borderColor='rgba(224,228,239,0.8)';
+  renderDashboard();
+};
+document.head.appendChild(script);
+</script>
+</body>
+</html>
